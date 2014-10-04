@@ -114,6 +114,10 @@ class DVRouter (Entity):
 		# by the packet who is calling the update
 
 
+"""
+This class represents the data structure that keeps track of 'this' DVRouter's neighbors, along with
+the port that should be used to send packets to each neighbor
+"""
 class Neighbors (Object):
 
 	neighbor_to_port = {};
