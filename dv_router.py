@@ -3,10 +3,6 @@ from sim.basics import *
 
 '''
 Create your distance vector router in this file.
-
-test 
-
-
 '''
 class DVRouter (Entity):
     def __init__(self):
