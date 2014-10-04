@@ -12,6 +12,8 @@ class DVRouter (Entity):
         # (2) routing table for 'this' DVRouter
         # Need to then call constructors for these data structures
 
+        # Data structures: https://piazza.com/class/hz9lw7aquvu2r9?cid=257
+
     """
     Called by the framework when the Entity self receives a packet.
 	 	packet - a Packet (or subclass).
