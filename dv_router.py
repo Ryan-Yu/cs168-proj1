@@ -113,3 +113,29 @@ class DVRouter (Entity):
 		# Can call packet.get_distance(destination) to get the distance to 'destination' as specified
 		# by the packet who is calling the update
 
+
+class Neighbors (Object):
+
+	neighbor_to_port = {};
+
+	# Retrieves a port in 'this' DVRouter that is associated to the given 'neighbor'
+	def get(self, neighbor):
+		return neighbor_to_port[neighbor]
+
+	# Adds a <neighbor -> port> pair into the dictionary
+	def put(self, neighbor, port):
+		neighbor_to_port[neighbor] = port
+
+	# Removes a neighbor from 'this' DVRouter (called when a link is torn down)
+	def remove_neighbor(self, neighbor):
+		del neighbor_to_port[neighbor]
+
+	def get_number_of_neighbors(self):
+		return len(neighbor_to_port.keys())
+
+
+
+
+
+
+
