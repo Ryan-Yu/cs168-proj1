@@ -12,6 +12,9 @@ class DVRouter (Entity):
         # (2) routing table for 'this' DVRouter
         # Need to then call constructors for these data structures
 
+        self.neighbors_table = Neighbors()
+
+
         # Data structures: https://piazza.com/class/hz9lw7aquvu2r9?cid=257
 
     """
@@ -73,6 +76,8 @@ class DVRouter (Entity):
 
 			# TODO (updating of data structures):
 			# (1) add this newly discovered neighbor to the list of neighbors for 'this' DVRouter
+			self.neighbors_table.put(new_neighbor, port)
+
 			# (2) update the cost from 'this' DVRouter to this newly discovered neighbor in our routing table
 
 		else:
@@ -81,6 +86,9 @@ class DVRouter (Entity):
 
 			# TODO (updating of data structres):
 			# (1) remove this deleted neighbor from our list of neighbors for 'this' DVRouter
+
+			self.remove_neighbor(deleted_neighbor)
+
 			# (2) update the cost from 'this' DVRouter to our newly-deleted neighbor
 			#     (need to do some weird stuff here based on how we handle deletion of links...
 			#	  maybe set the distance from 'this' DVRouter to newly-deleted neighbor as infinity?)
