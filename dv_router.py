@@ -41,6 +41,17 @@ class DVRouter (Entity):
 		else:
 			# Send the packet on its way, based on this DVRouter's current routing table
 
+			# send(packet, port) obviously takes in a port number; this means that we have to determine
+			# precisely which port a packet needs to be sent out of. But how is this done?
+
+			# Via Piazza (@195), when we receive a discovery packet indicating a new link is up,
+			# we can pair the port that we received the packet on with the entity from which we
+			# received the packet -- i.e. *the data structure that maintains neighbors of 'this' DVRouter'
+			# can be a dictionary from <neighbor -> port>, where neighbor (i.e. other switches) is the key.
+
+			# Piazza (Shu Zhong) says: If you receive a discovery packet from source A on some port, 
+			# then you can send packets to A through the same port as long as the link stays up.
+
 
 
 	"""
@@ -52,7 +63,6 @@ class DVRouter (Entity):
 	(2) updates the data structure that maintains 'this' DVRouter's routing table (that contains costs to other switches)
 	"""
 	def receive_discovery_packet(self, packet, port):
-		# Helper method: Handle receiving of a discovery packet
 
 		# When is_link_up is True, you're discovering a neighbor (hence the name DiscoveryPacket). 
 		if packet.is_link_up:
@@ -95,5 +105,9 @@ class DVRouter (Entity):
 	and then... maybe sends an update as well? (Does it need to actually send an update?)
 	"""
 	def receive_routing_update(self, packet, port):
-		# Helper method: Handle receiving of a routing update packet
+		# Argument 'packet' is of type RoutingUpdate
+
+		# Can call packet.all_dests to get a list of all destinations contained in the routing update
+		# Can call packet.get_distance(destination) to get the distance to 'destination' as specified
+		# by the packet who is calling the update
 
