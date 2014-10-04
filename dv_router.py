@@ -128,7 +128,7 @@ the port that should be used to send packets to each neighbor
 """
 class Neighbors (Object):
 
-	neighbor_to_port = {};
+	neighbor_to_port = {}
 
 	# Retrieves a port in 'this' DVRouter that is associated to the given 'neighbor'
 	def get(self, neighbor):
@@ -146,7 +146,20 @@ class Neighbors (Object):
 		return len(neighbor_to_port.keys())
 
 
+"""
 
+{D: {A: (3, C), B: (9, A), C: (2, D), D: (0, D), E: (3, D)} }
+
+To get from source router D to A requires a cost of 3, with next hop C
+To get from source router D to B requires a cost of 9, with next hop A
+...
+
+"""
+class RoutingTable (Object):
+
+	source_router_to_destination_map = {}
+
+	
 
 
 
