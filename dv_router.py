@@ -138,7 +138,7 @@ class DVRouter (Entity):
 
     A routing update simply corresponds to an update of routing table (i.e. costs) from a neighboring switch
     Thus, this helper method simply updates 'this' DVRouter's routing table basd on (many!) conditions
-    and then... maybe sends an update as well? (Does it need to actually send an update?)
+    and then sends an update as well.
     """
     def receive_routing_update(self, packet, port):
         # Argument 'packet' is of type RoutingUpdate
@@ -168,7 +168,7 @@ class DVRouter (Entity):
         # Returns destinations from current router, along with the cost/next hop to these destinations
         # i.e. {D: {A: (3, C), B: (9, A), C: (2, D), D: (0, D), E: (3, D)} } is the outer array
         # extracted part is {A: (3, C), B: (9, A), C: (2, D), D: (0, D), E: (3, D)}
-        current_router_destinations_to_next_hop_cost_map = self.routing_table[self]
+        current_router_destinations_to_next_hop_cost_map = self.routing_table.get_all_destinations_from_source(self)
 
         for destination, next_hop_cost in current_router_destinations_to_next_hop_cost_map.iteritems():
             # cost_from_self_to_destination
@@ -178,7 +178,7 @@ class DVRouter (Entity):
                 # cost_from_update_source_to_destination
                 cost_from_update_source_to_destination = packet.get_distance(destination)
                 # cost_from_source_to_update_source
-                cost_from_source_to_update_source = get_next_hop_cost_for_source_and_destination(self, update_source)
+                cost_from_source_to_update_source = self.routing_table.get_next_hop_cost_for_source_and_destination(self, update_source).getCost()
 
                 summed_alternate_path = cost_from_update_source_to_destination + cost_from_source_to_update_source
 
@@ -201,6 +201,8 @@ class DVRouter (Entity):
         # so the receiver knows implicitly what routes are no longer available.
 
 
+
+
     """
     Helper method that sends RoutingUpdate packets to 'this' DVRouter's neighbors, 
     based on the current routing table
@@ -208,7 +210,7 @@ class DVRouter (Entity):
     def update_neighbors(self):
 
         # These are the neighbors that we will be sending updates to
-        list_of_neighbors = neighbors_table.keys()
+        list_of_neighbors = self.neighbors_table.get_neighbors()
 
 
         routing_update = RoutingUpdate()
@@ -237,6 +239,9 @@ class Neighbors (object):
 
     def get_number_of_neighbors(self):
         return len(self.neighbor_to_port.keys())
+
+    def get_neighbors(self):
+        return self.neighbor_to_port.keys()
 
 '''
 
