@@ -212,8 +212,28 @@ class DVRouter (Entity):
         # These are the neighbors that we will be sending updates to
         list_of_neighbors = self.neighbors_table.get_neighbors()
 
+        for neighbor in list_of_neighbors:
+            if type(neighbor) is HostEntity:
+                # Do not send any updates to HostEntities
+                continue
 
-        routing_update = RoutingUpdate()
+            port_to_send_from = self.neighbors_table.get(neighbor)
+            routing_update = RoutingUpdate()
+
+            # map of destination -> NextHopCost for all destinations from self
+            destinations_to_next_hop_costs_map = self.routing_table.get_all_destinations_from_source(self)
+            for destination, next_hop_cost in destinations_to_next_hop_costs_map.iteritems():
+                # if the destination/cost pair that we're on is exactly the neighbor that we would be updating, then skip it
+                if neighbor == destination:
+                    continue
+
+                # TODO: Poison reverse
+
+                routing_update.add_destination(destination, next_hop_cost)
+
+            # Send the update packet from self
+            self.send(routing_update, port_to_send_from, False)
+
 
 
 '''
