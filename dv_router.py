@@ -142,6 +142,8 @@ class DVRouter (Entity):
 
         # Argument 'packet' is of type RoutingUpdate
 
+        needs_update = False
+
         # update_source is the router from which the routing update came from
     	update_source = packet.src
 
@@ -158,6 +160,7 @@ class DVRouter (Entity):
                 cost_from_source_to_update_source = self.routing_table.get_next_hop_cost_for_source_and_destination(self, update_source).getCost()
                 cost_from_update_source_to_destination = packet.get_distance(destination)
                 self.routing_table.create_next_hop_cost_for_destination(self, destination, update_source, cost_from_source_to_update_source + cost_from_update_source_to_destination)
+                needs_update = True
 
         # ALGORITHM (https://piazza.com/class/hz9lw7aquvu2r9?cid=290):
         # First, we look at each of our <destination -> NextHopCost> entries in source_router_to_destinations_map[self]
@@ -197,18 +200,19 @@ class DVRouter (Entity):
                 # new path has a lower port number than the old path
                 if self.neighbors_table.get(update_source) < self.neighbors_table.get(next_hop_for_final_destination):
                     # ... so update the routing table with the new path
-                    create_next_hop_cost_for_destination(self, final_destination, update_source, summed_alternate_path)
+                    self.routing_table.create_next_hop_cost_for_destination(self, final_destination, update_source, summed_alternate_path)
+                    needs_update = True
 
             # our new path from 'self' to 'destination' is shorter than our routing table's original path, so update routing table
             # with the new cost and with a new NextHop
             elif summed_alternate_path < cost_from_self_to_destination:
-                create_next_hop_cost_for_destination(self, final_destination, update_source, summed_alternate_path)
-
-
+                self.routing_table.create_next_hop_cost_for_destination(self, final_destination, update_source, summed_alternate_path)
+                needs_update = True
 
         # TODO: Implicit/explicit withdrawals
 
-        self.update_neighbors()
+        if needs_update:
+            self.update_neighbors()
 
         # Can call packet.all_dests to get a list of all destinations contained in the routing update
         # Can call packet.get_distance(destination) to get the distance to 'destination' as specified
