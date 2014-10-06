@@ -15,7 +15,6 @@ class DVRouter (Entity):
         self.neighbors_table = Neighbors()
         self.routing_table = RoutingTable()
 
-
         # Data structures: https://piazza.com/class/hz9lw7aquvu2r9?cid=257
 
 
@@ -53,7 +52,7 @@ class DVRouter (Entity):
             # then we cannot possibly forward the packet, so we simply return
             if (desired_packet_destination not in self.routing_table.get_all_destinations_from_source().keys()):
                 return
-            elif (self.routing_table.get_next_hop_cost_for_source_and_destination(self, desired_packet_destination).getCost() != float("inf")):
+            elif (self.routing_table.get_next_hop_cost_for_source_and_destination(self, desired_packet_destination).getCost() < RoutingTable.INFINITY):
                 # Case where we do have a meaningful (i.e. non-infinity) cost to reach our destination
 
                 # Use routing table to find out the next hop that we should use to get to desired_packet_destination
@@ -114,7 +113,8 @@ class DVRouter (Entity):
             #      maybe set the distance from 'this' DVRouter to newly-deleted neighbor as infinity?)
 
             # We will delete our entry in the routing table (for now)
-            self.routing_table.delete_next_hop_cost_entry_for_destination(self, deleted_neighbor)
+            # self.routing_table.delete_next_hop_cost_entry_for_destination(self, deleted_neighbor)
+            self.routing_table.create_next_hop_cost_for_destination(self, deleted_neighbor, None, RoutingTable.INFINITY)
 
         # TODO: Since we have properly updated our data structures when neighbors have been
         # discovered/removed from 'this' DVRouter, we need to propagate our updated information
@@ -156,11 +156,14 @@ class DVRouter (Entity):
 
             # If the addition of our new destinations from incoming packet's row causes 'self' to find out about new destinations,
             # then add the new destinations to our routing table with the appropriate cost
-            if destination not in self.routing_table.get_all_destinations_from_source(self):
+            if destination not in self.routing_table.get_all_destinations_from_source(self) and update_source in self.routing_table.get_all_destinations_from_source(self):
                 cost_from_source_to_update_source = self.routing_table.get_next_hop_cost_for_source_and_destination(self, update_source).getCost()
                 cost_from_update_source_to_destination = packet.get_distance(destination)
-                self.routing_table.create_next_hop_cost_for_destination(self, destination, update_source, cost_from_source_to_update_source + cost_from_update_source_to_destination)
-                needs_update = True
+
+                # Check if summed cost > 50; if so, then use implicit withdrawal by not putting the destination in the routing table
+                if cost_from_source_to_update_source + cost_from_update_source_to_destination < RoutingTable.INFINITY:
+                    self.routing_table.create_next_hop_cost_for_destination(self, destination, update_source, cost_from_source_to_update_source + cost_from_update_source_to_destination)
+                    needs_update = True
 
         # ALGORITHM (https://piazza.com/class/hz9lw7aquvu2r9?cid=290):
         # First, we look at each of our <destination -> NextHopCost> entries in source_router_to_destinations_map[self]
@@ -186,28 +189,30 @@ class DVRouter (Entity):
             if final_destination not in packet.all_dests():
                 continue
 
-            # cost_from_update_source_to_destination
-            cost_from_update_source_to_destination = packet.get_distance(final_destination)
-            # cost_from_source_to_update_source
-            cost_from_source_to_update_source = self.routing_table.get_next_hop_cost_for_source_and_destination(self, update_source).getCost()
+            if update_source in self.routing_table.get_all_destinations_from_source(self):
 
-            summed_alternate_path = cost_from_update_source_to_destination + cost_from_source_to_update_source
+                # cost_from_update_source_to_destination
+                cost_from_update_source_to_destination = packet.get_distance(final_destination)
+                # cost_from_source_to_update_source
+                cost_from_source_to_update_source = self.routing_table.get_next_hop_cost_for_source_and_destination(self, update_source).getCost()
 
-            next_hop_for_final_destination = self.routing_table.get_next_hop_cost_for_source_and_destination(self, final_destination).getNextHop()
+                summed_alternate_path = cost_from_update_source_to_destination + cost_from_source_to_update_source
 
-            # new found path cost and old path cost are the same, so instructions say to take the one with the lower port number
-            if summed_alternate_path == cost_from_self_to_destination:
-                # new path has a lower port number than the old path
-                if self.neighbors_table.get(update_source) < self.neighbors_table.get(next_hop_for_final_destination):
-                    # ... so update the routing table with the new path
+                next_hop_for_final_destination = self.routing_table.get_next_hop_cost_for_source_and_destination(self, final_destination).getNextHop()
+
+                # new found path cost and old path cost are the same, so instructions say to take the one with the lower port number
+                if summed_alternate_path == cost_from_self_to_destination:
+                    # new path has a lower port number than the old path
+                    if next_hop_for_final_destination in self.neighbors_table.get_neighbors() and self.neighbors_table.get(update_source) < self.neighbors_table.get(next_hop_for_final_destination):
+                        # ... so update the routing table with the new path
+                        self.routing_table.create_next_hop_cost_for_destination(self, final_destination, update_source, summed_alternate_path)
+                        needs_update = True
+
+                # our new path from 'self' to 'destination' is shorter than our routing table's original path, so update routing table
+                # with the new cost and with a new NextHop
+                elif summed_alternate_path < cost_from_self_to_destination:
                     self.routing_table.create_next_hop_cost_for_destination(self, final_destination, update_source, summed_alternate_path)
                     needs_update = True
-
-            # our new path from 'self' to 'destination' is shorter than our routing table's original path, so update routing table
-            # with the new cost and with a new NextHop
-            elif summed_alternate_path < cost_from_self_to_destination:
-                self.routing_table.create_next_hop_cost_for_destination(self, final_destination, update_source, summed_alternate_path)
-                needs_update = True
 
         # TODO: Implicit/explicit withdrawals
 
@@ -247,13 +252,17 @@ class DVRouter (Entity):
             for destination, next_hop_cost in destinations_to_next_hop_costs_map.iteritems():
                 # if the destination/cost pair that we're on is exactly the neighbor that we would be updating, then skip it
                 # i.e. 'Split Horizon'
-                if neighbor == destination:
+                if neighbor == destination: 
                     continue
 
-                # TODO: Poison reverse
-                
+                # Poison reverse
+                # if the next hop for a destination is NOT self, then the cost we advertise to our next hop to get to the eventual destination should be infinity
+                if next_hop_cost.getNextHop() != self and next_hop_cost.getNextHop() == neighbor:
+                    routing_update.add_destination(destination, RoutingTable.INFINITY)
+                else:
+                    routing_update.add_destination(destination, next_hop_cost.getCost())
 
-                routing_update.add_destination(destination, next_hop_cost.getCost())
+                # routing_update.add_destination(destination, next_hop_cost.getCost())
 
             # Send the update packet from self
             self.send(routing_update, port_to_send_from, False)

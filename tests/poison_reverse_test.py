@@ -48,7 +48,7 @@ class FakeEntity (Entity):
 def create (switch_type = FakeEntity, host_type = FakeEntity, n = 2):
     DVRouter.create('A')
     BasicHost.create('C')
-    FakeEntity.create('B', {C: 100}, {C: 1}) 
+    FakeEntity.create('B', {C: 51}, {C: 1}) 
     topo.link(A, B)
     
 import sim.core
