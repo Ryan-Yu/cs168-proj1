@@ -53,7 +53,7 @@ class DVRouter (Entity):
             # then we cannot possibly forward the packet, so we simply return
             if (desired_packet_destination not in self.routing_table.get_all_destinations_from_source().keys()):
                 return
-            elif (self.routing_table.get_next_hop_cost_for_source_and_destination(self, desired_packet_destination) != float("inf")):
+            elif (self.routing_table.get_next_hop_cost_for_source_and_destination(self, desired_packet_destination).getCost() != float("inf")):
                 # Case where we do have a meaningful (i.e. non-infinity) cost to reach our destination
 
                 # Use routing table to find out the next hop that we should use to get to desired_packet_destination
@@ -139,6 +139,7 @@ class DVRouter (Entity):
     and then sends an update as well.
     """
     def receive_routing_update(self, packet, port):
+        print self.routing_table
         # Argument 'packet' is of type RoutingUpdate
 
         # update_source is the router from which the routing update came from
@@ -193,6 +194,7 @@ class DVRouter (Entity):
             # with the new cost and with a new NextHop
             elif summed_alternate_path < cost_from_self_to_destination:
                 create_next_hop_cost_for_destination(self, final_destination, update_source, summed_alternate_path)
+
 
 
         # TODO: Implicit/explicit withdrawals
@@ -316,6 +318,9 @@ class RoutingTable (object):
         if source_router in self.source_router_to_destinations_map and destination_router in self.source_router_to_destinations_map[source_router]:
             self.source_router_to_destinations_map[source_router].pop(destination_router, None)
 
+    def __str__(self):
+        return str(self.source_router_to_destinations_map)
+
 
 
 '''
@@ -338,3 +343,11 @@ class NextHopCost (object):
 
     def setCost(self, new_cost):
         self.cost = new_cost
+
+    def __repr__(self):
+        s = "(Cost: "
+        s += str(self.cost)
+        s += " ; NextHop: "
+        s += str(self.next_hop)
+        s += ")"
+        return s
