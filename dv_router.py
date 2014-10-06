@@ -46,6 +46,7 @@ class DVRouter (Entity):
             # Handle receiving of a routing update
             self.receive_routing_update(packet, port)
         else:
+            # Send the packet on its way, based on this DVRouter's current routing table
             desired_packet_destination = packet.dst
 
             # If our desired packet destination is not even listed in the possible destinations for 'this' DVRouter
@@ -63,9 +64,6 @@ class DVRouter (Entity):
             else:
                 # Case where the cost to reach our destination is infinity, so we just return (without sending the packet)
                 return
-
-
-	  # Send the packet on its way, based on this DVRouter's current routing table
 
 	  # send(packet, port) obviously takes in a port number; this means that we have to determine
 	  # precisely which port a packet needs to be sent out of. But how is this done?
@@ -130,7 +128,7 @@ class DVRouter (Entity):
         # and then calling this.send(routingUpdatePacket, ...) if routingUpdatePacket.allDests returns a value
         # greater than 0 (i.e. if there are actually updated costs that need to be sent)
 
-
+        self.update_neighbors()
 
 
     """
@@ -239,7 +237,7 @@ class DVRouter (Entity):
 
                 # TODO: Poison reverse
 
-                routing_update.add_destination(destination, next_hop_cost)
+                routing_update.add_destination(destination, next_hop_cost.getCost())
 
             # Send the update packet from self
             self.send(routing_update, port_to_send_from, False)
@@ -283,6 +281,7 @@ To get from source router D to B requires a cost of 9, with next hop A
 
 '''
 class RoutingTable (object):
+    INFINITY = 51
 
     def __init__(self):
         self.source_router_to_destinations_map = {}
@@ -339,4 +338,3 @@ class NextHopCost (object):
 
     def setCost(self, new_cost):
         self.cost = new_cost
-
