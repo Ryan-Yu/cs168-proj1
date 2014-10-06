@@ -139,7 +139,7 @@ class DVRouter (Entity):
     and then sends an update as well.
     """
     def receive_routing_update(self, packet, port):
-        print self.routing_table
+
         # Argument 'packet' is of type RoutingUpdate
 
         # update_source is the router from which the routing update came from
@@ -148,9 +148,16 @@ class DVRouter (Entity):
         # Get a list of all destinations with paths announced in this message.
         all_announced_destinations = packet.all_dests()
      
-        # First, propagate all of our new destinations into the routing table for the incoming packet's row
         for destination in all_announced_destinations:
+            # First, propagate all of our new destinations into the routing table for the incoming packet's row
             self.routing_table.create_next_hop_cost_for_destination(update_source, destination, None, packet.get_distance(destination))
+
+            # If the addition of our new destinations from incoming packet's row causes 'self' to find out about new destinations,
+            # then add the new destinations to our routing table with the appropriate cost
+            if destination not in self.routing_table.get_all_destinations_from_source(self):
+                cost_from_source_to_update_source = self.routing_table.get_next_hop_cost_for_source_and_destination(self, update_source).getCost()
+                cost_from_update_source_to_destination = packet.get_distance(destination)
+                self.routing_table.create_next_hop_cost_for_destination(self, destination, update_source, cost_from_source_to_update_source + cost_from_update_source_to_destination)
 
         # ALGORITHM (https://piazza.com/class/hz9lw7aquvu2r9?cid=290):
         # First, we look at each of our <destination -> NextHopCost> entries in source_router_to_destinations_map[self]
@@ -183,10 +190,12 @@ class DVRouter (Entity):
 
             summed_alternate_path = cost_from_update_source_to_destination + cost_from_source_to_update_source
 
+            next_hop_for_final_destination = self.routing_table.get_next_hop_cost_for_source_and_destination(self, final_destination).getNextHop()
+
             # new found path cost and old path cost are the same, so instructions say to take the one with the lower port number
             if summed_alternate_path == cost_from_self_to_destination:
                 # new path has a lower port number than the old path
-                if self.neighbors_table(update_source) < self.neighbors_table(final_destination):
+                if self.neighbors_table.get(update_source) < self.neighbors_table.get(next_hop_for_final_destination):
                     # ... so update the routing table with the new path
                     create_next_hop_cost_for_destination(self, final_destination, update_source, summed_alternate_path)
 
