@@ -251,6 +251,7 @@ class DVRouter (Entity):
                     continue
 
                 # TODO: Poison reverse
+                
 
                 routing_update.add_destination(destination, next_hop_cost.getCost())
 
